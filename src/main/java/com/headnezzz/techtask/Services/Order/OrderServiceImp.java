@@ -22,7 +22,7 @@ public class OrderServiceImp implements OrderService {
     @Override
     public Order add(Order order) {
         order.setOrderId(null);
-        return orderRepository.save(order); //Вот тут не уверен что вернуть
+        return orderRepository.save(order);
     }
 
     @Override

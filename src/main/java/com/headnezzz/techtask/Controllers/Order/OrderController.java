@@ -1,23 +1,21 @@
 package com.headnezzz.techtask.Controllers.Order;
 
 
-import com.headnezzz.techtask.Dto.GoodsDto;
 import com.headnezzz.techtask.Dto.OrderDto;
-import com.headnezzz.techtask.Entity.Goods;
 import com.headnezzz.techtask.Entity.Order;
 import com.headnezzz.techtask.Entity.OrderLine;
 import com.headnezzz.techtask.Exceptions.OrderNotFoundException;
 import com.headnezzz.techtask.Services.Order.OrderService;
 import com.headnezzz.techtask.Services.OrderLine.OrderLineService;
-import org.aspectj.weaver.ast.Or;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/order")
@@ -26,42 +24,34 @@ public class OrderController {
 
     private final OrderService orderService;
     private final OrderLineService orderLineService;
+    private final ModelMapper modelMapper;
 
     @Autowired
-    public OrderController(OrderService orderService, OrderLineService orderLineService) {
+    public OrderController(OrderService orderService, OrderLineService orderLineService, ModelMapper modelMapper) {
         this.orderService = orderService;
         this.orderLineService = orderLineService;
+        this.modelMapper = modelMapper;
     }
 
     @PostMapping
-    public void createOrder() {
-//        OrderLine orderLine = new OrderLine();
-//        Goods goods = new Goods(orderLine);
-//        Goods goods1 = new Goods(orderLine);
-//        Set<Goods> goodsSet = new HashSet<>();
-//        goodsSet.add(goods1);
-//        goodsSet.add(goods);
-//        orderLine.setGoods(goodsSet);
-//        orderService.add(new Order(1l, "123", LocalDateTime.now(), "123", new HashSet<>(Collections.singletonList(orderLine))));
-//        Order order = new Order();
-//        order.setAddress(form.getAddress());
-//        order.setClient(form.getClient());
-//        order.setDate(form.getDate());
-//
-//        for (GoodsDto goodsDto:form.getGoods()) {
-//            OrderLine orderLine = new OrderLine();
-//        }
-        //return ResponseEntity.status(HttpStatus.CREATED).body(orderService.add(order));
+    public ResponseEntity<Order> createOrder(@RequestBody OrderDto orderDto) {
+        Order order = orderService.add(convertOrderToEntity(orderDto));
+        List<OrderLine> orderLineList = orderDto.getGoods().stream().map(e -> new OrderLine(e.getId(), order, e.getCount())).collect(Collectors.toList());
+        orderLineService.addAll(orderLineList);
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Order> updateOrder(@PathVariable Long id, @RequestBody Order newOrder) {
-        return ResponseEntity.accepted().body(orderService.update(newOrder, id));
+    public ResponseEntity<Order> updateOrder(@PathVariable Long id, @RequestBody OrderDto orderDto) {
+        Order order = orderService.update(convertOrderToEntity(orderDto), id);
+        //TODO: обновлять и/или добавлять лайны
+        return ResponseEntity.accepted().body(order);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Order> deleteOrder(@PathVariable Long id) {
         orderService.delete(id);
+        orderLineService.deleteAllByOrder(id);
         return ResponseEntity.accepted().build();
     }
 
@@ -71,9 +61,11 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Collection<OrderLine>> getOrder(@PathVariable Long id) {
-        Order order = orderService.add(new Order("test",LocalDateTime.now(),"test"));
-        orderLineService.add(new OrderLine(1L, order, 11));
-        return ResponseEntity.ok(orderLineService.getAll());
+    public ResponseEntity<Order> getOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getById(id).orElseThrow(() -> new OrderNotFoundException(id)));
+    }
+
+    private Order convertOrderToEntity(OrderDto orderDto) {
+        return modelMapper.map(orderDto, Order.class);
     }
 }

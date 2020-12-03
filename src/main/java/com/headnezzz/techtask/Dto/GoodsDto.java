@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class GoodsDto {
-    private String name;
+    private Long id;
     private int count;
 }

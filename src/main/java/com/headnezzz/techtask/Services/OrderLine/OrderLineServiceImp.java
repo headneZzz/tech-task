@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,7 +23,12 @@ public class OrderLineServiceImp implements OrderLineService {
     @Override
     public OrderLine add(OrderLine orderLine) {
         orderLine.setId(null);
-        return orderLineRepository.save(orderLine); //Вот тут не уверен что вернуть
+        return orderLineRepository.save(orderLine);
+    }
+
+    @Override
+    public List<OrderLine> addAll(List<OrderLine> orderLines) {
+        return orderLineRepository.saveAll(orderLines);
     }
 
     @Override
@@ -33,14 +39,23 @@ public class OrderLineServiceImp implements OrderLineService {
     }
 
     @Override
-    public void delete(Long id) {
-        orderLineRepository.delete(orderLineRepository.findById(id)
-                .orElseThrow(() -> new OrderNotFoundException(id)));
+    public void deleteById(Long id) {
+        orderLineRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteAllByOrder(Long orderId) {
+        orderLineRepository.deleteAllByOrder(orderId);
     }
 
     @Override
     public Collection<OrderLine> getAll() {
         return orderLineRepository.findAll();
+    }
+
+    @Override
+    public Collection<OrderLine> getAllByOrder(Long orderId) {
+        return orderLineRepository.findAllByOrder(orderId);
     }
 
     @Override
